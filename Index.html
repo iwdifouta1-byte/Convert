@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>ConvertiTout Pro - Convertisseur universel + Assistant IA</title>
+    <style>
+        *{margin:0;padding:0;box-sizing:border-box}
+        body{background:linear-gradient(135deg,#0f172a,#1e293b);font-family:system-ui,'Segoe UI',sans-serif;padding:1.5rem;color:#f1f5f9}
+        .container{max-width:1400px;margin:0 auto;background:rgba(255,255,255,0.05);border-radius:2rem;padding:1.5rem;backdrop-filter:blur(4px)}
+        h1{text-align:center;background:linear-gradient(135deg,#a5f3fc,#c084fc);background-clip:text;color:transparent}
+        .sub{text-align:center;font-size:0.85rem;color:#94a3b8;margin-bottom:1.5rem}
+        .grid{display:flex;flex-wrap:wrap;gap:1.5rem;justify-content:center}
+        .card{flex:1;min-width:280px;background:#0f172ad9;border-radius:1.5rem;padding:1.2rem;border:1px solid #334155}
+        .card-title{font-weight:600;font-size:1.2rem;margin-bottom:0.8rem;display:flex;gap:0.5rem;align-items:center}
+        .drop-area{background:#1e293b;border:2px dashed #475569;border-radius:1rem;padding:1rem;text-align:center;cursor:pointer;margin-bottom:0.8rem}
+        .drop-area:hover{border-color:#818cf8;background:#2d3a5e}
+        select,button,input[type=number]{width:100%;padding:0.6rem;margin-top:0.6rem;border-radius:2rem;border:none;background:#334155;color:white;font-weight:500}
+        button{background:linear-gradient(95deg,#4f46e5,#7c3aed);cursor:pointer}
+        .result{margin-top:0.8rem;background:#0f172a;border-radius:1rem;padding:0.6rem;font-size:0.75rem;text-align:center;word-break:break-word}
+        .badge{background:#4f46e5;padding:0.15rem 0.6rem;border-radius:20px;font-size:0.6rem}
+        footer{text-align:center;margin-top:1.5rem;font-size:0.7rem;color:#64748b}
+        a{color:#c084fc}
+        .chatbot{position:fixed;bottom:20px;right:20px;width:360px;background:#1e293b;border-radius:1rem;padding:0.5rem;border:1px solid #4f46e5;z-index:1000;box-shadow:0 10px 25px rgba(0,0,0,0.3)}
+        .chatbot-header{display:flex;justify-content:space-between;cursor:pointer;padding:0.5rem;font-weight:bold;background:#0f172a;border-radius:0.75rem}
+        .chatbot-messages{height:320px;overflow-y:auto;font-size:0.8rem;padding:0.5rem;display:none;background:#0f172a;border-radius:0.5rem;margin-top:5px}
+        .chatbot-input{display:none;gap:0.5rem;margin-top:0.5rem}
+        .chatbot-input input{flex:1;margin:0}
+        .chatbot-input button{width:auto;margin:0;padding:0.6rem 1rem}
+        .teach-area{margin-top:10px;border-top:1px solid #334155;padding-top:8px;font-size:0.7rem}
+        .teach-area input{width:calc(50% - 5px);display:inline-block;margin-right:5px;margin-top:5px}
+        .lang-select{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:8px}
+        .lang-select button{background:#334155;margin:0;font-size:0.7rem;padding:0.3rem 0.6rem;width:auto;flex:1}
+        @media (max-width:700px){.chatbot{width:300px;right:10px;bottom:10px}}
+    </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.4.2/mammoth.browser.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/file-saver@2.0.5/dist/FileSaver.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+    <script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
+</head>
+<body>
+<div class="container">
+    <h1>✨ ConvertiTout Pro ✨</h1>
+    <div class="sub">Conversion de documents, images, données, vidéos – assistant intelligent intégré</div>
+    <div class="grid">
+        <div class="card"><div class="card-title">📄 Documents</div>
+            <div class="drop-area" data-id="doc"><input type="file" id="docFile" style="display:none" accept=".docx,.txt,.pdf" multiple><div id="docName">Aucun fichier</div></div>
+            <select id="docFormat">
+                <option value="docx2pdf">DOCX → PDF (texte)</option><option value="txt2pdf">TXT → PDF</option>
+                <option value="pdf2txt">PDF → Texte</option><option value="docx2txt">DOCX → Texte brut</option>
+                <option value="pdfMerge">Fusionner plusieurs PDF</option>
+            </select>
+            <button id="docBtn">Convertir</button><div class="result" id="docRes">Prêt</div>
+        </div>
+        <div class="card"><div class="card-title">🖼️ Images</div>
+            <div class="drop-area" data-id="img"><input type="file" id="imgFile" style="display:none" accept="image/*"><div id="imgName">Aucune image</div></div>
+            <select id="imgFormat"><option value="png">PNG</option><option value="jpeg">JPEG</option><option value="webp">WEBP</option></select>
+            <input type="number" id="imgWidth" placeholder="Largeur (px, vide = auto)" style="margin-top:5px">
+            <input type="number" id="imgHeight" placeholder="Hauteur (px, vide = auto)">
+            <button id="imgBtn">Redimensionner / Convertir</button>
+            <button id="ocrBtn" style="margin-top:5px;background:#7c3aed">🔍 OCR → Texte (image → texte)</button>
+            <div class="result" id="imgRes">Prêt</div>
+        </div>
+        <div class="card"><div class="card-title">📊 Données</div>
+            <div class="drop-area" data-id="data"><input type="file" id="dataFile" style="display:none" accept=".csv,.json"><div id="dataName">Aucun fichier</div></div>
+            <select id="dataFormat"><option value="csv2json">CSV → JSON</option><option value="json2csv">JSON → CSV</option><option value="tsv2json">TSV → JSON</option></select>
+            <button id="dataBtn">Transformer</button><div class="result" id="dataRes">Prêt</div>
+        </div>
+        <div class="card"><div class="card-title">🎬 Média & PowerPoint</div>
+            <div class="drop-area" data-id="media"><input type="file" id="mediaFile" style="display:none" accept="video/mp4,video/webm,application/vnd.openxmlformats-officedocument.presentationml.presentation"><div id="mediaName">Aucun fichier</div></div>
+            <select id="mediaFormat">
+                <option value="video2audio">Extraire l’audio (WebM)</option>
+                <option value="pptx2text">PowerPoint → Texte brut</option>
+                <option value="pptx2images">PowerPoint → Extraire toutes les images</option>
+            </select>
+            <button id="mediaBtn">Convertir</button><div class="result" id="mediaRes">Prêt</div>
+        </div>
+    </div>
+    <footer>⚡ 100% local – vos fichiers ne quittent jamais votre appareil.<br>🌍 Pour la transcription audio→texte : <a href="https://huggingface.co/spaces/openai/whisper" target="_blank">Whisper gratuit</a> | 🎵 Conversion vers MP3 : <a href="https://online-audio-converter.com" target="_blank">Online-Convert</a>.</footer>
+</div>
+
+<div class="chatbot" id="chatbot">
+    <div class="chatbot-header" id="chatbotHeader">
+        <span>🧠 Assistant IA (multilingue)</span>
+        <span>▼</span>
+    </div>
+    <div class="lang-select">
+        <button data-lang="fr">🇫🇷</button><button data-lang="en">🇬🇧</button><button data-lang="es">🇪🇸</button>
+        <button data-lang="de">🇩🇪</button><button data-lang="it">🇮🇹</button><button data-lang="pt">🇵🇹</button>
+        <button data-lang="zh">🇨🇳</button><button data-lang="ar">🇸🇦</button><button data-lang="hi">🇮🇳</button>
+        <button data-lang="ru">🇷🇺</button>
+    </div>
+    <div id="chatbotMessages" class="chatbot-messages"></div>
+    <div id="chatbotInput" class="chatbot-input">
+        <input type="text" id="chatInput" placeholder="Posez votre question...">
+        <button id="chatSend">Envoyer</button>
+    </div>
+    <div class="teach-area">
+        <input type="text" id="teachQuestion" placeholder="Question exemple (langue actuelle)">
+        <input type="text" id="teachAnswer" placeholder="Réponse correspondante">
+        <button id="teachBtn" style="margin-top:5px;">📖 Enseigner (entraîner)</button>
+    </div>
+</div>
+
+<script>
+    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';
+    
+    function setupDrop(cardId, inputId, nameId, varName, multi = false) {
+        const drop = document.querySelector(`.drop-area[data-id="${cardId}"]`);
+        const input = document.getElementById(inputId);
+        const nameSpan = document.getElementById(nameId);
+        drop.addEventListener('click', () => input.click());
+        drop.addEventListener('dragover', e => e.preventDefault());
+        drop.addEventListener('drop', e => {
+            e.preventDefault();
+            input.files = e.dataTransfer.files;
+            if (input.files.length) {
+                if (multi) nameSpan.innerText = `${input.files.length} fichier(s) sélectionné(s)`;
+                else nameSpan.innerText = input.files[0].name;
+                window[varName] = multi ? input.files : input.files[0];
+            }
+        });
+        input.addEventListener('change', () => {
+            if (input.files.length) {
+                if (multi) nameSpan.innerText = `${input.files.length} fichier(s) sélectionné(s)`;
+                else nameSpan.innerText = input.files[0].name;
+                window[varName] = multi ? input.files : input.files[0];
+            }
+        });
+    }
+    setupDrop('doc','docFile','docName','currentDoc', true);
+    setupDrop('img','imgFile','imgName','currentImg', false);
+    setupDrop('data','dataFile','dataName','currentData', false);
+    setupDrop('media','mediaFile','mediaName','currentMedia', false);
+    
+    document.getElementById('docBtn').onclick = async () => {
+        const fmt = document.getElementById('docFormat').value;
+        const outDiv = document.getElementById('docRes');
+        if (fmt === 'pdfMerge') {
+            const files = document.getElementById('docFile').files;
+            if (!files.length) { outDiv.innerHTML = '❌ Sélectionnez plusieurs PDF'; return; }
+            outDiv.innerHTML = '⏳ Fusion...';
+            try {
+                const { PDFDocument } = window.PDFLib;
+                const mergedPdf = await PDFDocument.create();
+                for (let f of files) {
+                    if (!f.name.endsWith('.pdf')) continue;
+                    const bytes = await f.arrayBuffer();
+                    const pdf = await PDFDocument.load(bytes);
+                    const pageIndices = pdf.getPages().map((_, idx) => idx);
+                    const copiedPages = await mergedPdf.copyPages(pdf, pageIndices);
+                    copiedPages.forEach(page => mergedPdf.addPage(page));
+                }
+                const mergedBytes = await mergedPdf.save();
+                saveAs(new Blob([mergedBytes], {type:'application/pdf'}), 'fusion.pdf');
+                outDiv.innerHTML = '✅ Fusion PDF réussie';
+            } catch(e) { outDiv.innerHTML = '❌ '+e.message; }
+            return;
+        }
+        const file = window.currentDoc;
+        if (!file || (typeof file === 'object' && file.length && !file.name)) { outDiv.innerHTML = '❌ Sélectionnez un seul fichier'; return; }
+        outDiv.innerHTML = '⏳...';
+        try {
+            if (fmt === 'docx2pdf') {
+                if (!file.name.endsWith('.docx')) throw new Error('.docx requis');
+                const buf = await file.arrayBuffer();
+                const html = (await mammoth.convertToHtml({ arrayBuffer: buf })).value;
+                const div = document.createElement('div'); div.innerHTML = html;
+                const text = div.innerText;
+                const { jsPDF } = window.jspdf;
+                const pdf = new jsPDF();
+                pdf.text(pdf.splitTextToSize(text, 180), 15, 20);
+                saveAs(pdf.output('blob'), file.name.replace(/\.docx$/i,'.pdf'));
+                outDiv.innerHTML = '✅ DOCX→PDF';
+            } else if (fmt === 'txt2pdf') {
+                const text = await file.text();
+                const { jsPDF } = window.jspdf;
+                const pdf = new jsPDF();
+                pdf.text(pdf.splitTextToSize(text, 170), 15, 20);
+                saveAs(pdf.output('blob'), file.name.replace(/\.[^/.]+$/,'.pdf'));
+                outDiv.innerHTML = '✅ TXT→PDF';
+            } else if (fmt === 'pdf2txt') {
+                const buf = await file.arrayBuffer();
+                const pdf = await pdfjsLib.getDocument({ data: buf }).promise;
+                let full = '';
+                for(let i=1;i<=pdf.numPages;i++){
+                    const page = await pdf.getPage(i);
+                    const content = await page.getTextContent();
+                    full += content.items.map(it=>it.str).join(' ')+'\n';
+                }
+                saveAs(new Blob([full],{type:'text/plain'}), file.name.replace(/\.pdf$/i,'.txt'));
+                outDiv.innerHTML = '✅ PDF→Texte';
+            } else if (fmt === 'docx2txt') {
+                const buf = await file.arrayBuffer();
+                const res = await mammoth.extractRawText({ arrayBuffer: buf });
+                saveAs(new Blob([res.value],{type:'text/plain'}), file.name.replace(/\.docx$/i,'.txt'));
+                outDiv.innerHTML = '✅ DOCX→TXT';
+            }
+        } catch(e) { outDiv.innerHTML = '❌ '+e.message; }
+    };
+    
+    document.getElementById('imgBtn').onclick = async () => {
+        const file = window.currentImg;
+        if(!file) return document.getElementById('imgRes').innerHTML='❌ Aucune image';
+        const fmt = document.getElementById('imgFormat').value;
+        let width = document.getElementById('imgWidth').value, height = document.getElementById('imgHeight').value;
+        width = width === '' ? null : parseInt(width); height = height === '' ? null : parseInt(height);
+        const out = document.getElementById('imgRes'); out.innerHTML='⏳...';
+        try {
+            let img = await new Promise((res,rej)=>{const i=new Image();i.onload=()=>res(i);i.onerror=rej;i.src=URL.createObjectURL(file);});
+            const canvas = document.createElement('canvas');
+            let w = width || img.width, h = height || img.height;
+            canvas.width = w; canvas.height = h;
+            canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+            const blob = await new Promise(r=>canvas.toBlob(r,`image/${fmt}`,0.9));
+            saveAs(blob, file.name.replace(/\.[^/.]+$/,`_conv.${fmt}`));
+            out.innerHTML=`✅ Conversion (${w}x${h}) → ${fmt.toUpperCase()}`;
+            URL.revokeObjectURL(img.src);
+        } catch(e) { out.innerHTML='❌ '+e.message; }
+    };
+    
+    document.getElementById('ocrBtn').onclick = async () => {
+        const file = window.currentImg;
+        if(!file) return document.getElementById('imgRes').innerHTML='❌ Aucune image';
+        const out = document.getElementById('imgRes'); out.innerHTML='⏳ OCR...';
+        try {
+            const { data: { text } } = await Tesseract.recognize(file, 'fra+eng');
+            saveAs(new Blob([text],{type:'text/plain'}), file.name.replace(/\.[^/.]+$/, '_ocr.txt'));
+            out.innerHTML='✅ Texte extrait (OCR)';
+        } catch(e) { out.innerHTML='❌ '+e.message; }
+    };
+    
+    document.getElementById('dataBtn').onclick = async () => {
+        const file = window.currentData;
+        if(!file) return document.getElementById('dataRes').innerHTML='❌ Aucun fichier';
+        const fmt = document.getElementById('dataFormat').value;
+        const out = document.getElementById('dataRes'); out.innerHTML='⏳...';
+        try {
+            const txt = await file.text();
+            if(fmt==='csv2json'){
+                const lines = txt.split(/\r?\n/).filter(l=>l.trim());
+                if(lines.length<2) throw new Error('CSV invalide');
+                const headers = lines[0].split(/[;,]/).map(h=>h.trim().replace(/^"|"$/g,''));
+                const json = [];
+                for(let i=1;i<lines.length;i++){
+                    const vals = lines[i].split(/[;,]/).map(v=>v.trim().replace(/^"|"$/g,''));
+                    let obj={}; headers.forEach((h,idx)=>obj[h]=vals[idx]||""); json.push(obj);
+                }
+                saveAs(new Blob([JSON.stringify(json,null,2)],{type:'application/json'}), file.name.replace(/\.csv$/i,'.json'));
+                out.innerHTML=`✅ CSV→JSON (${json.length})`;
+            } else if(fmt==='json2csv'){
+                const json = JSON.parse(txt);
+                if(!Array.isArray(json)||!json.length) throw new Error('Tableau d\'objets requis');
+                const headers = Object.keys(json[0]);
+                const rows = [headers.join(',')];
+                for(const obj of json) rows.push(headers.map(h=>`"${String(obj[h]||'').replace(/"/g,'""')}"`).join(','));
+                saveAs(new Blob([rows.join('\n')],{type:'text/csv'}), file.name.replace(/\.json$/i,'.csv'));
+                out.innerHTML='✅ JSON→CSV';
+            } else if(fmt==='tsv2json'){
+                const lines = txt.split(/\r?\n/).filter(l=>l.trim());
+                const headers = lines[0].split(/\t/);
+                const json = [];
+                for(let i=1;i<lines.length;i++){
+                    const vals = lines[i].split(/\t/);
+                    let obj={}; headers.forEach((h,idx)=>obj[h]=vals[idx]||""); json.push(obj);
+                }
+                saveAs(new Blob([JSON.stringify(json,null,2)],{type:'application/json'}), file.name.replace(/\.tsv$/i,'.json'));
+                out.innerHTML='✅ TSV→JSON';
+            }
+        } catch(e){ out.innerHTML='❌ '+e.message; }
+    };
+    
+    document.getElementById('mediaBtn').onclick = async () => {
+        const file = window.currentMedia;
+        if(!file) return document.getElementById('mediaRes').innerHTML='❌ Aucun fichier';
+        const fmt = document.getElementById('mediaFormat').value;
+        const out = document.getElementById('mediaRes'); out.innerHTML='⏳...';
+        try {
+            if(fmt==='video2audio'){
+                if(!file.type.startsWith('video/')) throw new Error('Vidéo requise');
+                const video = document.createElement('video');
+                video.src = URL.createObjectURL(file);
+                video.muted = true;
+                try { await video.play(); } catch(e) { throw new Error('Cliquez sur la page puis réessayez (lecture auto bloquée)'); }
+                const stream = video.captureStream();
+                const audioTrack = stream.getAudioTracks()[0];
+                if(!audioTrack) throw new Error('Aucune piste audio');
+                const mediaStream = new MediaStream([audioTrack]);
+                const recorder = new MediaRecorder(mediaStream, { mimeType: 'audio/webm' });
+                let chunks = [];
+                recorder.ondataavailable = e => chunks.push(e.data);
+                recorder.onstop = () => {
+                    saveAs(new Blob(chunks,{type:'audio/webm'}), file.name.replace(/\.[^/.]+$/,'_audio.webm'));
+                    out.innerHTML='✅ Audio extrait (WebM)';
+                    video.pause(); URL.revokeObjectURL(video.src);
+                };
+                recorder.start();
+                setTimeout(()=>recorder.stop(), (video.duration*1000)+500);
+                video.onended = ()=>{ if(recorder.state==='recording') recorder.stop(); };
+            } else if(fmt==='pptx2text'){
+                if(!file.name.endsWith('.pptx')) throw new Error('.pptx requis');
+                const buf = await file.arrayBuffer();
+                const zip = await JSZip.loadAsync(buf);
+                const slides = Object.keys(zip.files).filter(f=>f.startsWith('ppt/slides/slide')&&f.endsWith('.xml')).sort();
+                let allText = '';
+                for(const s of slides){
+                    const xml = await zip.files[s].async('string');
+                    co
